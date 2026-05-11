@@ -1,5 +1,6 @@
 import random
 import turtle
+from pathlib import Path
 
 
 SCREEN_WIDTH = 600
@@ -25,8 +26,13 @@ ARROW_COLOR = "#72848B"
 BUTTON_BORDER_COLOR = "#D8D0C2"
 START_BUTTON_COLOR = "#7A8C67"
 PLAY_AGAIN_BUTTON_COLOR = "#6F7D62"
+EXIT_BUTTON_COLOR = "#8D5F5F"
+START_BUTTON_HOVER_COLOR = "#95A77B"
+PLAY_AGAIN_BUTTON_HOVER_COLOR = "#849272"
+EXIT_BUTTON_HOVER_COLOR = "#A36F6F"
 BUTTON_GLOW_COLORS = ["#7A8C67", "#83966F", "#8BA074", "#83966F", "#7A8C67", "#80926C"]
 FOOD_COLORS = ["#B56F62", "#C0926D", "#C4A56F", "#9E7C8D", "#6E8C95", "#8B829E"]
+HIGH_SCORE_FILE = Path(__file__).with_name("high_score.txt")
 
 
 class Snake:
@@ -145,7 +151,7 @@ class Scoreboard(turtle.Turtle):
     def __init__(self):
         super().__init__()
         self.score = 0
-        self.high_score = 0
+        self.high_score = self.load_high_score()
         self.color(TEXT_COLOR)
         self.penup()
         self.hideturtle()
@@ -160,6 +166,15 @@ class Scoreboard(turtle.Turtle):
         self.pause_turtle.penup()
         self.write_score()
 
+    def load_high_score(self):
+        try:
+            return int(HIGH_SCORE_FILE.read_text(encoding="utf-8").strip())
+        except (FileNotFoundError, ValueError):
+            return 0
+
+    def save_high_score(self):
+        HIGH_SCORE_FILE.write_text(str(self.high_score), encoding="utf-8")
+
     def write_score(self):
         self.clear()
         self.write(
@@ -172,6 +187,7 @@ class Scoreboard(turtle.Turtle):
         self.score += 1
         if self.score > self.high_score:
             self.high_score = self.score
+            self.save_high_score()
         self.write_score()
 
     def reset(self):
@@ -222,13 +238,26 @@ class Border(turtle.Turtle):
 
 
 class Button:
-    def __init__(self, text, center_x, center_y, width=180, height=50, fill_color=START_BUTTON_COLOR):
+    def __init__(
+        self,
+        text,
+        center_x,
+        center_y,
+        width=180,
+        height=50,
+        fill_color=START_BUTTON_COLOR,
+        hover_color=None,
+    ):
         self.text = text
         self.center_x = center_x
         self.center_y = center_y
         self.width = width
         self.height = height
         self.fill_color = fill_color
+        self.hover_color = hover_color or fill_color
+        self.current_fill_color = fill_color
+        self.is_visible = False
+        self.is_hovered = False
 
         self.box = turtle.Turtle()
         self.box.penup()
@@ -250,6 +279,9 @@ class Button:
             width = self.width
         if height is None:
             height = self.height
+
+        self.is_visible = True
+        self.current_fill_color = fill_color
 
         left = self.center_x - (width / 2)
         top = self.center_y + (height / 2)
@@ -277,6 +309,8 @@ class Button:
         )
 
     def hide(self):
+        self.is_visible = False
+        self.is_hovered = False
         self.box.clear()
         self.label.clear()
 
@@ -287,6 +321,14 @@ class Button:
             self.center_x - half_width <= x <= self.center_x + half_width
             and self.center_y - half_height <= y <= self.center_y + half_height
         )
+
+    def set_hovered(self, hovered):
+        if not self.is_visible or self.is_hovered == hovered:
+            return
+
+        self.is_hovered = hovered
+        fill_color = self.hover_color if hovered else self.fill_color
+        self.show(fill_color=fill_color)
 
 
 class StartScreen:
@@ -430,12 +472,37 @@ food = Food()
 scoreboard = Scoreboard()
 border = Border()
 start_screen = StartScreen()
-start_button = Button("Start", 0, -85, fill_color=START_BUTTON_COLOR)
-play_again_button = Button("Play Again", 0, -50, fill_color=PLAY_AGAIN_BUTTON_COLOR)
+start_button = Button(
+    "Start",
+    0,
+    -85,
+    fill_color=START_BUTTON_COLOR,
+    hover_color=START_BUTTON_HOVER_COLOR,
+)
+play_again_button = Button(
+    "Play Again",
+    0,
+    -50,
+    fill_color=PLAY_AGAIN_BUTTON_COLOR,
+    hover_color=PLAY_AGAIN_BUTTON_HOVER_COLOR,
+)
+exit_button = Button(
+    "Exit",
+    0,
+    -145,
+    width=140,
+    height=44,
+    fill_color=EXIT_BUTTON_COLOR,
+    hover_color=EXIT_BUTTON_HOVER_COLOR,
+)
 game_is_on = False
 game_started = False
 is_paused = False
 current_speed_ms = START_SPEED_MS
+
+
+def all_buttons():
+    return [start_button, play_again_button, exit_button]
 
 
 def bind_controls():
@@ -464,6 +531,7 @@ def prepare_game():
     food.refresh()
     play_again_button.hide()
     start_button.hide()
+    exit_button.hide()
     start_screen.hide()
 
 
@@ -481,6 +549,10 @@ def restart_game():
 def handle_click(x, y):
     global game_started
 
+    if exit_button.was_clicked(x, y):
+        quit_game()
+        return
+
     if not game_started and start_button.was_clicked(x, y):
         game_started = True
         restart_game()
@@ -488,6 +560,20 @@ def handle_click(x, y):
 
     if not game_is_on and play_again_button.was_clicked(x, y):
         restart_game()
+
+
+def handle_mouse_move(event):
+    x = event.x - (screen.window_width() / 2)
+    y = (screen.window_height() / 2) - event.y
+
+    for button in all_buttons():
+        button.set_hovered(button.was_clicked(x, y))
+
+    screen.update()
+
+
+def quit_game():
+    screen.bye()
 
 
 def toggle_pause():
@@ -515,6 +601,7 @@ def end_game():
     scoreboard.clear_pause()
     scoreboard.game_over()
     play_again_button.show()
+    exit_button.show()
     screen.update()
 
 
@@ -545,6 +632,8 @@ snake.hide()
 food.hide_food()
 start_screen.show()
 start_button.show()
+exit_button.show()
 screen.onclick(handle_click)
+screen.getcanvas().bind("<Motion>", handle_mouse_move)
 screen.update()
 screen.mainloop()
