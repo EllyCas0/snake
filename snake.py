@@ -27,9 +27,11 @@ BUTTON_BORDER_COLOR = "#D8D0C2"
 START_BUTTON_COLOR = "#7A8C67"
 PLAY_AGAIN_BUTTON_COLOR = "#6F7D62"
 EXIT_BUTTON_COLOR = "#8D5F5F"
+MENU_BUTTON_COLOR = "#7B6C58"
 START_BUTTON_HOVER_COLOR = "#95A77B"
 PLAY_AGAIN_BUTTON_HOVER_COLOR = "#849272"
 EXIT_BUTTON_HOVER_COLOR = "#A36F6F"
+MENU_BUTTON_HOVER_COLOR = "#94826B"
 DIFFICULTY_BUTTON_COLOR = "#4D5A63"
 DIFFICULTY_BUTTON_HOVER_COLOR = "#61707A"
 DIFFICULTY_BUTTON_SELECTED_COLOR = "#8B9E74"
@@ -578,9 +580,18 @@ start_button = Button(
 play_again_button = Button(
     "Play Again",
     0,
-    -50,
+    0,
     fill_color=PLAY_AGAIN_BUTTON_COLOR,
     hover_color=PLAY_AGAIN_BUTTON_HOVER_COLOR,
+)
+main_menu_button = Button(
+    "Main Menu",
+    0,
+    -60,
+    width=180,
+    height=44,
+    fill_color=MENU_BUTTON_COLOR,
+    hover_color=MENU_BUTTON_HOVER_COLOR,
 )
 easy_button = Button(
     "Easy",
@@ -615,7 +626,7 @@ hard_button = Button(
 exit_button = Button(
     "Exit",
     0,
-    -250,
+    -245,
     width=140,
     height=44,
     fill_color=EXIT_BUTTON_COLOR,
@@ -628,7 +639,15 @@ current_speed_ms = DIFFICULTY_SPEEDS[selected_difficulty]
 
 
 def all_buttons():
-    return [start_button, play_again_button, easy_button, normal_button, hard_button, exit_button]
+    return [
+        start_button,
+        play_again_button,
+        main_menu_button,
+        easy_button,
+        normal_button,
+        hard_button,
+        exit_button,
+    ]
 
 
 def difficulty_buttons():
@@ -673,6 +692,7 @@ def prepare_game():
     scoreboard.clear_pause()
     food.refresh()
     play_again_button.hide()
+    main_menu_button.hide()
     start_button.hide()
     easy_button.hide()
     normal_button.hide()
@@ -711,6 +731,10 @@ def handle_click(x, y):
 
     if not game_is_on and play_again_button.was_clicked(x, y):
         restart_game()
+        return
+
+    if not game_is_on and main_menu_button.was_clicked(x, y):
+        show_main_menu()
 
 
 def handle_mouse_move(event):
@@ -753,6 +777,7 @@ def end_game():
     scoreboard.clear_countdown()
     scoreboard.game_over()
     play_again_button.show()
+    main_menu_button.show()
     exit_button.show()
     screen.update()
 
@@ -780,6 +805,29 @@ def start_countdown():
     scoreboard.clear_message()
     scoreboard.clear_pause()
     countdown_step(0)
+
+
+def show_main_menu():
+    global game_is_on, is_paused, game_started
+
+    game_is_on = False
+    is_paused = False
+    game_started = False
+    snake.hide()
+    food.hide_food()
+    scoreboard.reset()
+    scoreboard.clear_pause()
+    scoreboard.clear_countdown()
+    play_again_button.hide()
+    main_menu_button.hide()
+    start_screen.show()
+    start_button.show()
+    easy_button.show()
+    normal_button.show()
+    hard_button.show()
+    set_difficulty(selected_difficulty)
+    exit_button.show()
+    screen.update()
 
 
 def run_game():
