@@ -537,6 +537,7 @@ def bind_controls():
     screen.onkeypress(snake.right, "D")
     screen.onkeypress(toggle_pause, "p")
     screen.onkeypress(toggle_pause, "P")
+    screen.onkeypress(quit_game, "Escape")
 
 
 def prepare_game():
