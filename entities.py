@@ -23,6 +23,11 @@ class Snake:
         segment.goto(position)
         self.segments.append(segment)
 
+    def set_color(self, color):
+        self.color = color
+        for segment in self.segments:
+            segment.color(color)
+
     def extend(self):
         self.add_segment(self.segments[-1].position())
 
@@ -66,6 +71,19 @@ class Snake:
             or head.ycor() > self.playfield_bounds["top"]
             or head.ycor() < self.playfield_bounds["bottom"]
         )
+
+    def wrap_head(self):
+        head = self.segments[0]
+
+        if head.xcor() > self.playfield_bounds["right"]:
+            head.setx(self.playfield_bounds["left"])
+        elif head.xcor() < self.playfield_bounds["left"]:
+            head.setx(self.playfield_bounds["right"])
+
+        if head.ycor() > self.playfield_bounds["top"]:
+            head.sety(self.playfield_bounds["bottom"])
+        elif head.ycor() < self.playfield_bounds["bottom"]:
+            head.sety(self.playfield_bounds["top"])
 
     def hit_tail(self):
         head = self.segments[0]

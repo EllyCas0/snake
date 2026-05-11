@@ -371,7 +371,7 @@ class StartScreen:
         self.arrows.clear()
         left_center_x = -230 - self.arrow_offset
         right_center_x = 230 + self.arrow_offset
-        center_y = 12
+        center_y = 82
 
         self.draw_arrow(left_center_x - 14, center_y, 180)
         self.draw_arrow(left_center_x + 14, center_y, 0)
@@ -415,25 +415,25 @@ class StartScreen:
         self.subtitle.clear()
         self.instructions.clear()
         self.arrows.clear()
-        self.shadow.goto(3, 76)
+        self.shadow.goto(3, 146)
         self.shadow.write(
             "Snake Game",
             align="center",
             font=("Arial", 30, "bold"),
         )
-        self.title.goto(0, 80)
+        self.title.goto(0, 150)
         self.title.write(
             "Snake Game",
             align="center",
             font=("Arial", 30, "bold"),
         )
-        self.subtitle.goto(0, 30)
+        self.subtitle.goto(0, 100)
         self.subtitle.write(
             "Move with arrow keys or W A S D",
             align="center",
             font=("Arial", 16, "normal"),
         )
-        self.instructions.goto(0, -5)
+        self.instructions.goto(0, 65)
         self.instructions.write(
             "Press P to pause or continue",
             align="center",
@@ -441,7 +441,7 @@ class StartScreen:
         )
         self.draw_arrow_icons()
         self.difficulty_label.clear()
-        self.difficulty_label.goto(0, -60)
+        self.difficulty_label.goto(0, 5)
         self.difficulty_label.write(
             "Choose difficulty",
             align="center",
@@ -457,3 +457,101 @@ class StartScreen:
         self.instructions.clear()
         self.difficulty_label.clear()
         self.arrows.clear()
+
+
+class SettingsScreen:
+    def __init__(self, title_color, title_shadow_color, text_color):
+        self.is_visible = False
+
+        self.shadow = turtle.Turtle()
+        self.shadow.hideturtle()
+        self.shadow.color(title_shadow_color)
+        self.shadow.penup()
+
+        self.title = turtle.Turtle()
+        self.title.hideturtle()
+        self.title.color(title_color)
+        self.title.penup()
+
+        self.subtitle = turtle.Turtle()
+        self.subtitle.hideturtle()
+        self.subtitle.color(text_color)
+        self.subtitle.penup()
+
+        self.section_label = turtle.Turtle()
+        self.section_label.hideturtle()
+        self.section_label.color(text_color)
+        self.section_label.penup()
+
+        self.border_label = turtle.Turtle()
+        self.border_label.hideturtle()
+        self.border_label.color(text_color)
+        self.border_label.penup()
+
+        self.border_hint = turtle.Turtle()
+        self.border_hint.hideturtle()
+        self.border_hint.color(text_color)
+        self.border_hint.penup()
+
+        self.coming_soon = turtle.Turtle()
+        self.coming_soon.hideturtle()
+        self.coming_soon.color(text_color)
+        self.coming_soon.penup()
+
+    def show(self):
+        self.is_visible = True
+        self.shadow.clear()
+        self.title.clear()
+        self.subtitle.clear()
+        self.section_label.clear()
+        self.border_label.clear()
+        self.border_hint.clear()
+        self.coming_soon.clear()
+
+        self.shadow.goto(3, 116)
+        self.shadow.write(
+            "Settings",
+            align="center",
+            font=("Arial", 28, "bold"),
+        )
+        self.title.goto(0, 120)
+        self.title.write(
+            "Settings",
+            align="center",
+            font=("Arial", 28, "bold"),
+        )
+        self.subtitle.goto(0, 78)
+        self.subtitle.write(
+            "Customize your snake",
+            align="center",
+            font=("Arial", 15, "normal"),
+        )
+        self.section_label.goto(0, 38)
+        self.section_label.write(
+            "Choose snake color",
+            align="center",
+            font=("Arial", 18, "bold"),
+        )
+        self.border_label.goto(0, -112)
+        self.border_label.write(
+            "Walls",
+            align="center",
+            font=("Arial", 18, "bold"),
+        )
+        self.border_hint.goto(0, -140)
+        self.border_hint.write(
+            "Off lets you wrap around the screen",
+            align="center",
+            font=("Arial", 13, "normal"),
+        )
+        
+
+    def hide(self):
+        self.is_visible = False
+        self.shadow.clear()
+        self.title.clear()
+        self.subtitle.clear()
+        self.section_label.clear()
+        self.border_label.clear()
+        self.border_hint.clear()
+        self.coming_soon.clear()

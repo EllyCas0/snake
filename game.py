@@ -2,7 +2,7 @@ import turtle
 from pathlib import Path
 
 from entities import Food, Snake
-from ui import Border, Button, Scoreboard, StartScreen
+from ui import Border, Button, Scoreboard, SettingsScreen, StartScreen
 
 
 SCREEN_WIDTH = 600
@@ -29,22 +29,29 @@ START_BUTTON_COLOR = "#7A8C67"
 PLAY_AGAIN_BUTTON_COLOR = "#6F7D62"
 EXIT_BUTTON_COLOR = "#8D5F5F"
 MENU_BUTTON_COLOR = "#7B6C58"
+SETTINGS_BUTTON_COLOR = "#5B6D78"
 START_BUTTON_HOVER_COLOR = "#95A77B"
 PLAY_AGAIN_BUTTON_HOVER_COLOR = "#849272"
 EXIT_BUTTON_HOVER_COLOR = "#A36F6F"
 MENU_BUTTON_HOVER_COLOR = "#94826B"
+SETTINGS_BUTTON_HOVER_COLOR = "#70838F"
 DIFFICULTY_BUTTON_COLOR = "#4D5A63"
 DIFFICULTY_BUTTON_HOVER_COLOR = "#61707A"
 DIFFICULTY_BUTTON_SELECTED_COLOR = "#8B9E74"
 BUTTON_GLOW_COLORS = ["#7A8C67", "#83966F", "#8BA074", "#83966F", "#7A8C67", "#80926C"]
 FOOD_COLORS = ["#B56F62", "#C0926D", "#C4A56F", "#9E7C8D", "#6E8C95", "#8B829E"]
+SNAKE_COLOR_OPTIONS = {
+    "Moss": "#8FA06E",
+    "Gold": "#B89A58",
+    "Ocean": "#6F93A6",
+}
 HIGH_SCORE_FILE = Path(__file__).with_name("high_score.txt")
 DIFFICULTY_SPEEDS = {
     "Easy": 90,
     "Normal": 70,
     "Hard": 50,
 }
-DEFAULT_DIFFICULTY = "Normal"
+DEFAULT_DIFFICULTY = "Easy"
 PLAYFIELD_BOUNDS = {
     "top": PLAYFIELD_TOP,
     "bottom": PLAYFIELD_BOTTOM,
@@ -56,6 +63,8 @@ PLAYFIELD_BOUNDS = {
 class Game:
     def __init__(self):
         self.selected_difficulty = DEFAULT_DIFFICULTY
+        self.selected_snake_color_name = "Moss"
+        self.border_enabled = True
         self.game_is_on = False
         self.game_started = False
         self.is_paused = False
@@ -68,7 +77,7 @@ class Game:
         self.screen.tracer(0)
 
         self.snake = Snake(
-            color=SNAKE_COLOR,
+            color=SNAKE_COLOR_OPTIONS[self.selected_snake_color_name],
             move_distance=MOVE_DISTANCE,
             starting_positions=STARTING_POSITIONS,
             playfield_bounds=PLAYFIELD_BOUNDS,
@@ -92,7 +101,7 @@ class Game:
         self.start_button = Button(
             "Start",
             0,
-            -175,
+            -100,
             text_color=TEXT_COLOR,
             border_color=BUTTON_BORDER_COLOR,
             fill_color=START_BUTTON_COLOR,
@@ -121,7 +130,7 @@ class Game:
         self.easy_button = Button(
             "Easy",
             -120,
-            -115,
+            -45,
             text_color=TEXT_COLOR,
             border_color=BUTTON_BORDER_COLOR,
             width=100,
@@ -133,7 +142,7 @@ class Game:
         self.normal_button = Button(
             "Normal",
             0,
-            -115,
+            -45,
             text_color=TEXT_COLOR,
             border_color=BUTTON_BORDER_COLOR,
             width=100,
@@ -145,7 +154,7 @@ class Game:
         self.hard_button = Button(
             "Hard",
             120,
-            -115,
+            -45,
             text_color=TEXT_COLOR,
             border_color=BUTTON_BORDER_COLOR,
             width=100,
@@ -157,7 +166,7 @@ class Game:
         self.exit_button = Button(
             "Exit",
             0,
-            -245,
+            -285,
             text_color=TEXT_COLOR,
             border_color=BUTTON_BORDER_COLOR,
             width=140,
@@ -165,6 +174,92 @@ class Game:
             fill_color=EXIT_BUTTON_COLOR,
             hover_color=EXIT_BUTTON_HOVER_COLOR,
         )
+        self.settings_button = Button(
+            "Settings",
+            0,
+            -175,
+            text_color=TEXT_COLOR,
+            border_color=BUTTON_BORDER_COLOR,
+            width=170,
+            height=44,
+            fill_color=SETTINGS_BUTTON_COLOR,
+            hover_color=SETTINGS_BUTTON_HOVER_COLOR,
+        )
+        self.settings_back_button = Button(
+            "Back",
+            0,
+            -225,
+            text_color=TEXT_COLOR,
+            border_color=BUTTON_BORDER_COLOR,
+            width=150,
+            height=42,
+            fill_color=MENU_BUTTON_COLOR,
+            hover_color=MENU_BUTTON_HOVER_COLOR,
+        )
+        self.snake_color_buttons = {
+            "Moss": Button(
+                "Moss",
+                -140,
+                -20,
+                text_color=TEXT_COLOR,
+                border_color=BUTTON_BORDER_COLOR,
+                width=110,
+                height=42,
+                fill_color=SNAKE_COLOR_OPTIONS["Moss"],
+                hover_color="#9CAC7B",
+                selected_fill_color="#A7B886",
+            ),
+            "Gold": Button(
+                "Gold",
+                0,
+                -20,
+                text_color=TEXT_COLOR,
+                border_color=BUTTON_BORDER_COLOR,
+                width=110,
+                height=42,
+                fill_color=SNAKE_COLOR_OPTIONS["Gold"],
+                hover_color="#C7A766",
+                selected_fill_color="#D2B676",
+            ),
+            "Ocean": Button(
+                "Ocean",
+                140,
+                -20,
+                text_color=TEXT_COLOR,
+                border_color=BUTTON_BORDER_COLOR,
+                width=110,
+                height=42,
+                fill_color=SNAKE_COLOR_OPTIONS["Ocean"],
+                hover_color="#83A8BA",
+                selected_fill_color="#90B4C6",
+            ),
+        }
+        self.border_toggle_buttons = {
+            "On": Button(
+                "On",
+                -70,
+                -160,
+                text_color=TEXT_COLOR,
+                border_color=BUTTON_BORDER_COLOR,
+                width=90,
+                height=40,
+                fill_color=DIFFICULTY_BUTTON_COLOR,
+                hover_color=DIFFICULTY_BUTTON_HOVER_COLOR,
+                selected_fill_color=DIFFICULTY_BUTTON_SELECTED_COLOR,
+            ),
+            "Off": Button(
+                "Off",
+                70,
+                -160,
+                text_color=TEXT_COLOR,
+                border_color=BUTTON_BORDER_COLOR,
+                width=90,
+                height=40,
+                fill_color=DIFFICULTY_BUTTON_COLOR,
+                hover_color=DIFFICULTY_BUTTON_HOVER_COLOR,
+                selected_fill_color=DIFFICULTY_BUTTON_SELECTED_COLOR,
+            ),
+        }
         self.start_screen = StartScreen(
             screen=self.screen,
             start_button=self.start_button,
@@ -175,6 +270,11 @@ class Game:
             button_glow_colors=BUTTON_GLOW_COLORS,
             animation_ms=START_ANIMATION_MS,
         )
+        self.settings_screen = SettingsScreen(
+            title_color=TITLE_COLOR,
+            title_shadow_color=TITLE_SHADOW_COLOR,
+            text_color=TEXT_COLOR,
+        )
 
     def all_buttons(self):
         return [
@@ -184,7 +284,11 @@ class Game:
             self.easy_button,
             self.normal_button,
             self.hard_button,
+            self.settings_button,
+            self.settings_back_button,
             self.exit_button,
+            *self.snake_color_buttons.values(),
+            *self.border_toggle_buttons.values(),
         ]
 
     def difficulty_buttons(self):
@@ -198,6 +302,17 @@ class Game:
         self.selected_difficulty = name
         for difficulty_name, button in self.difficulty_buttons().items():
             button.set_selected(difficulty_name == self.selected_difficulty)
+
+    def set_snake_color(self, name):
+        self.selected_snake_color_name = name
+        self.snake.set_color(SNAKE_COLOR_OPTIONS[name])
+        for color_name, button in self.snake_color_buttons.items():
+            button.set_selected(color_name == self.selected_snake_color_name)
+
+    def set_border_enabled(self, enabled):
+        self.border_enabled = enabled
+        self.border_toggle_buttons["On"].set_selected(enabled)
+        self.border_toggle_buttons["Off"].set_selected(not enabled)
 
     def bind_controls(self):
         keymap = {
@@ -215,14 +330,30 @@ class Game:
             "D": self.snake.right,
             "p": self.toggle_pause,
             "P": self.toggle_pause,
+            "space": self.handle_spacebar,
             "Escape": self.quit_game,
         }
         self.screen.listen()
         for key, handler in keymap.items():
             self.screen.onkeypress(handler, key)
 
+    def handle_spacebar(self):
+        if self.settings_screen.is_visible or self.game_is_on:
+            return
+
+        if not self.game_started:
+            self.game_started = True
+            self.restart_game()
+            return
+
+        self.restart_game()
+
     def prepare_game(self):
-        self.border.show_border()
+        if self.border_enabled:
+            self.border.show_border()
+        else:
+            self.border.hide_border()
+        self.settings_screen.hide()
         self.snake.show()
         self.food.show_food()
         self.scoreboard.reset()
@@ -235,6 +366,12 @@ class Game:
         self.easy_button.hide()
         self.normal_button.hide()
         self.hard_button.hide()
+        self.settings_button.hide()
+        self.settings_back_button.hide()
+        for button in self.snake_color_buttons.values():
+            button.hide()
+        for button in self.border_toggle_buttons.values():
+            button.hide()
         self.exit_button.hide()
         self.start_screen.hide()
 
@@ -246,11 +383,42 @@ class Game:
         self.start_countdown()
 
     def handle_click(self, x, y):
+        if self.settings_screen.is_visible:
+            for color_name, button in self.snake_color_buttons.items():
+                if button.was_clicked(x, y):
+                    self.set_snake_color(color_name)
+                    self.screen.update()
+                    return
+
+            if self.border_toggle_buttons["On"].was_clicked(x, y):
+                self.set_border_enabled(True)
+                self.screen.update()
+                return
+
+            if self.border_toggle_buttons["Off"].was_clicked(x, y):
+                self.set_border_enabled(False)
+                self.screen.update()
+                return
+
+            if self.settings_back_button.was_clicked(x, y):
+                self.show_main_menu()
+                return
+
+            if self.exit_button.was_clicked(x, y):
+                self.quit_game()
+                return
+
+            return
+
         for difficulty_name, button in self.difficulty_buttons().items():
             if self.start_screen.is_visible and button.was_clicked(x, y):
                 self.set_difficulty(difficulty_name)
                 self.screen.update()
                 return
+
+        if self.start_screen.is_visible and self.settings_button.was_clicked(x, y):
+            self.show_settings_menu()
+            return
 
         if self.exit_button.was_clicked(x, y):
             self.quit_game()
@@ -335,14 +503,52 @@ class Game:
         self.scoreboard.hide_score()
         self.scoreboard.clear_pause()
         self.scoreboard.clear_countdown()
+        self.settings_screen.hide()
         self.play_again_button.hide()
         self.main_menu_button.hide()
+        self.settings_back_button.hide()
+        for button in self.snake_color_buttons.values():
+            button.hide()
+        for button in self.border_toggle_buttons.values():
+            button.hide()
         self.start_screen.show()
         self.start_button.show()
         self.easy_button.show()
         self.normal_button.show()
         self.hard_button.show()
+        self.settings_button.show()
         self.set_difficulty(self.selected_difficulty)
+        self.set_snake_color(self.selected_snake_color_name)
+        self.set_border_enabled(self.border_enabled)
+        self.exit_button.show()
+        self.screen.update()
+
+    def show_settings_menu(self):
+        self.game_is_on = False
+        self.is_paused = False
+        self.border.hide_border()
+        self.snake.hide()
+        self.food.hide_food()
+        self.scoreboard.hide_score()
+        self.scoreboard.clear_message()
+        self.scoreboard.clear_pause()
+        self.scoreboard.clear_countdown()
+        self.start_screen.hide()
+        self.play_again_button.hide()
+        self.main_menu_button.hide()
+        self.start_button.hide()
+        self.easy_button.hide()
+        self.normal_button.hide()
+        self.hard_button.hide()
+        self.settings_button.hide()
+        self.settings_screen.show()
+        for button in self.snake_color_buttons.values():
+            button.show()
+        for button in self.border_toggle_buttons.values():
+            button.show()
+        self.set_snake_color(self.selected_snake_color_name)
+        self.set_border_enabled(self.border_enabled)
+        self.settings_back_button.show()
         self.exit_button.show()
         self.screen.update()
 
@@ -351,6 +557,12 @@ class Game:
             return
 
         self.snake.move()
+
+        if self.border_enabled:
+            hit_boundary = self.snake.hit_wall()
+        else:
+            self.snake.wrap_head()
+            hit_boundary = False
 
         if self.snake.segments[0].distance(self.food) < 15:
             self.snake.extend()
@@ -361,7 +573,7 @@ class Game:
                 self.current_speed_ms - SPEED_STEP_MS,
             )
 
-        if self.snake.hit_wall() or self.snake.hit_tail():
+        if hit_boundary or self.snake.hit_tail():
             self.end_game()
             return
 
@@ -379,7 +591,10 @@ class Game:
         self.easy_button.show()
         self.normal_button.show()
         self.hard_button.show()
+        self.settings_button.show()
         self.set_difficulty(self.selected_difficulty)
+        self.set_snake_color(self.selected_snake_color_name)
+        self.set_border_enabled(self.border_enabled)
         self.exit_button.show()
         self.screen.onclick(self.handle_click)
         self.screen.getcanvas().bind("<Motion>", self.handle_mouse_move)
