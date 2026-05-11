@@ -164,6 +164,10 @@ class Scoreboard(turtle.Turtle):
         self.pause_turtle.hideturtle()
         self.pause_turtle.color(TEXT_COLOR)
         self.pause_turtle.penup()
+        self.countdown_turtle = turtle.Turtle()
+        self.countdown_turtle.hideturtle()
+        self.countdown_turtle.color(TEXT_COLOR)
+        self.countdown_turtle.penup()
         self.write_score()
 
     def load_high_score(self):
@@ -218,6 +222,18 @@ class Scoreboard(turtle.Turtle):
 
     def clear_pause(self):
         self.pause_turtle.clear()
+
+    def show_countdown(self, text):
+        self.countdown_turtle.clear()
+        self.countdown_turtle.goto(0, 10)
+        self.countdown_turtle.write(
+            text,
+            align="center",
+            font=("Arial", 28, "bold"),
+        )
+
+    def clear_countdown(self):
+        self.countdown_turtle.clear()
 
 
 class Border(turtle.Turtle):
@@ -542,8 +558,7 @@ def restart_game():
     prepare_game()
     current_speed_ms = START_SPEED_MS
     is_paused = False
-    game_is_on = True
-    run_game()
+    start_countdown()
 
 
 def handle_click(x, y):
@@ -599,10 +614,36 @@ def end_game():
     game_is_on = False
     is_paused = False
     scoreboard.clear_pause()
+    scoreboard.clear_countdown()
     scoreboard.game_over()
     play_again_button.show()
     exit_button.show()
     screen.update()
+
+
+def countdown_step(index):
+    global game_is_on
+
+    countdown_messages = ["3", "2", "1", "Go!"]
+
+    if index >= len(countdown_messages):
+        scoreboard.clear_countdown()
+        game_is_on = True
+        run_game()
+        return
+
+    scoreboard.show_countdown(countdown_messages[index])
+    screen.update()
+    screen.ontimer(lambda: countdown_step(index + 1), 500)
+
+
+def start_countdown():
+    global game_is_on
+
+    game_is_on = False
+    scoreboard.clear_message()
+    scoreboard.clear_pause()
+    countdown_step(0)
 
 
 def run_game():
