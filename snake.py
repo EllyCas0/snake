@@ -30,9 +30,19 @@ EXIT_BUTTON_COLOR = "#8D5F5F"
 START_BUTTON_HOVER_COLOR = "#95A77B"
 PLAY_AGAIN_BUTTON_HOVER_COLOR = "#849272"
 EXIT_BUTTON_HOVER_COLOR = "#A36F6F"
+DIFFICULTY_BUTTON_COLOR = "#4D5A63"
+DIFFICULTY_BUTTON_HOVER_COLOR = "#61707A"
+DIFFICULTY_BUTTON_SELECTED_COLOR = "#8B9E74"
 BUTTON_GLOW_COLORS = ["#7A8C67", "#83966F", "#8BA074", "#83966F", "#7A8C67", "#80926C"]
 FOOD_COLORS = ["#B56F62", "#C0926D", "#C4A56F", "#9E7C8D", "#6E8C95", "#8B829E"]
 HIGH_SCORE_FILE = Path(__file__).with_name("high_score.txt")
+DIFFICULTY_SPEEDS = {
+    "Easy": 90,
+    "Normal": 70,
+    "Hard": 50,
+}
+DEFAULT_DIFFICULTY = "Normal"
+selected_difficulty = DEFAULT_DIFFICULTY
 
 
 class Snake:
@@ -151,7 +161,7 @@ class Scoreboard(turtle.Turtle):
     def __init__(self):
         super().__init__()
         self.score = 0
-        self.high_score = self.load_high_score()
+        self.high_scores = self.load_high_scores()
         self.color(TEXT_COLOR)
         self.penup()
         self.hideturtle()
@@ -170,28 +180,62 @@ class Scoreboard(turtle.Turtle):
         self.countdown_turtle.penup()
         self.write_score()
 
-    def load_high_score(self):
+    def load_high_scores(self):
         try:
-            return int(HIGH_SCORE_FILE.read_text(encoding="utf-8").strip())
-        except (FileNotFoundError, ValueError):
-            return 0
+            contents = HIGH_SCORE_FILE.read_text(encoding="utf-8").strip()
+        except FileNotFoundError:
+            return {difficulty: 0 for difficulty in DIFFICULTY_SPEEDS}
 
-    def save_high_score(self):
-        HIGH_SCORE_FILE.write_text(str(self.high_score), encoding="utf-8")
+        default_scores = {difficulty: 0 for difficulty in DIFFICULTY_SPEEDS}
+
+        if not contents:
+            return default_scores
+
+        if "=" not in contents:
+            try:
+                legacy_score = int(contents)
+            except ValueError:
+                return default_scores
+            default_scores["Normal"] = legacy_score
+            return default_scores
+
+        for line in contents.splitlines():
+            if "=" not in line:
+                continue
+            difficulty, value = line.split("=", 1)
+            difficulty = difficulty.strip()
+            if difficulty not in default_scores:
+                continue
+            try:
+                default_scores[difficulty] = int(value.strip())
+            except ValueError:
+                continue
+
+        return default_scores
+
+    def save_high_scores(self):
+        lines = [
+            f"{difficulty}={self.high_scores[difficulty]}"
+            for difficulty in DIFFICULTY_SPEEDS
+        ]
+        HIGH_SCORE_FILE.write_text("\n".join(lines), encoding="utf-8")
+
+    def current_high_score(self):
+        return self.high_scores[selected_difficulty]
 
     def write_score(self):
         self.clear()
         self.write(
-            f"Score: {self.score}   High Score: {self.high_score}",
+            f"Score: {self.score}   {selected_difficulty} Best: {self.current_high_score()}",
             align="center",
             font=("Arial", 18, "bold"),
         )
 
     def increase(self):
         self.score += 1
-        if self.score > self.high_score:
-            self.high_score = self.score
-            self.save_high_score()
+        if self.score > self.current_high_score():
+            self.high_scores[selected_difficulty] = self.score
+            self.save_high_scores()
         self.write_score()
 
     def reset(self):
@@ -263,6 +307,7 @@ class Button:
         height=50,
         fill_color=START_BUTTON_COLOR,
         hover_color=None,
+        selected_fill_color=None,
     ):
         self.text = text
         self.center_x = center_x
@@ -271,9 +316,11 @@ class Button:
         self.height = height
         self.fill_color = fill_color
         self.hover_color = hover_color or fill_color
+        self.selected_fill_color = selected_fill_color or self.hover_color
         self.current_fill_color = fill_color
         self.is_visible = False
         self.is_hovered = False
+        self.is_selected = False
 
         self.box = turtle.Turtle()
         self.box.penup()
@@ -327,6 +374,7 @@ class Button:
     def hide(self):
         self.is_visible = False
         self.is_hovered = False
+        self.is_selected = False
         self.box.clear()
         self.label.clear()
 
@@ -343,7 +391,26 @@ class Button:
             return
 
         self.is_hovered = hovered
-        fill_color = self.hover_color if hovered else self.fill_color
+        self.redraw()
+
+    def set_selected(self, selected):
+        if self.is_selected == selected:
+            return
+
+        self.is_selected = selected
+        if self.is_visible:
+            self.redraw()
+
+    def redraw(self):
+        if not self.is_visible:
+            return
+
+        if self.is_selected:
+            fill_color = self.selected_fill_color
+        elif self.is_hovered:
+            fill_color = self.hover_color
+        else:
+            fill_color = self.fill_color
         self.show(fill_color=fill_color)
 
 
@@ -373,6 +440,11 @@ class StartScreen:
         self.instructions.hideturtle()
         self.instructions.color(TEXT_COLOR)
         self.instructions.penup()
+
+        self.difficulty_label = turtle.Turtle()
+        self.difficulty_label.hideturtle()
+        self.difficulty_label.color(TEXT_COLOR)
+        self.difficulty_label.penup()
 
         self.arrows = turtle.Turtle()
         self.arrows.hideturtle()
@@ -466,6 +538,13 @@ class StartScreen:
             font=("Arial", 16, "normal"),
         )
         self.draw_arrow_icons()
+        self.difficulty_label.clear()
+        self.difficulty_label.goto(0, -60)
+        self.difficulty_label.write(
+            "Choose difficulty",
+            align="center",
+            font=("Arial", 16, "normal"),
+        )
         screen.ontimer(self.animate, START_ANIMATION_MS)
 
     def hide(self):
@@ -474,6 +553,7 @@ class StartScreen:
         self.title.clear()
         self.subtitle.clear()
         self.instructions.clear()
+        self.difficulty_label.clear()
         self.arrows.clear()
 
 
@@ -491,7 +571,7 @@ start_screen = StartScreen()
 start_button = Button(
     "Start",
     0,
-    -85,
+    -175,
     fill_color=START_BUTTON_COLOR,
     hover_color=START_BUTTON_HOVER_COLOR,
 )
@@ -502,10 +582,40 @@ play_again_button = Button(
     fill_color=PLAY_AGAIN_BUTTON_COLOR,
     hover_color=PLAY_AGAIN_BUTTON_HOVER_COLOR,
 )
+easy_button = Button(
+    "Easy",
+    -120,
+    -115,
+    width=100,
+    height=40,
+    fill_color=DIFFICULTY_BUTTON_COLOR,
+    hover_color=DIFFICULTY_BUTTON_HOVER_COLOR,
+    selected_fill_color=DIFFICULTY_BUTTON_SELECTED_COLOR,
+)
+normal_button = Button(
+    "Normal",
+    0,
+    -115,
+    width=100,
+    height=40,
+    fill_color=DIFFICULTY_BUTTON_COLOR,
+    hover_color=DIFFICULTY_BUTTON_HOVER_COLOR,
+    selected_fill_color=DIFFICULTY_BUTTON_SELECTED_COLOR,
+)
+hard_button = Button(
+    "Hard",
+    120,
+    -115,
+    width=100,
+    height=40,
+    fill_color=DIFFICULTY_BUTTON_COLOR,
+    hover_color=DIFFICULTY_BUTTON_HOVER_COLOR,
+    selected_fill_color=DIFFICULTY_BUTTON_SELECTED_COLOR,
+)
 exit_button = Button(
     "Exit",
     0,
-    -145,
+    -250,
     width=140,
     height=44,
     fill_color=EXIT_BUTTON_COLOR,
@@ -514,11 +624,27 @@ exit_button = Button(
 game_is_on = False
 game_started = False
 is_paused = False
-current_speed_ms = START_SPEED_MS
+current_speed_ms = DIFFICULTY_SPEEDS[selected_difficulty]
 
 
 def all_buttons():
-    return [start_button, play_again_button, exit_button]
+    return [start_button, play_again_button, easy_button, normal_button, hard_button, exit_button]
+
+
+def difficulty_buttons():
+    return {
+        "Easy": easy_button,
+        "Normal": normal_button,
+        "Hard": hard_button,
+    }
+
+
+def set_difficulty(name):
+    global selected_difficulty
+
+    selected_difficulty = name
+    for difficulty_name, button in difficulty_buttons().items():
+        button.set_selected(difficulty_name == selected_difficulty)
 
 
 def bind_controls():
@@ -548,6 +674,9 @@ def prepare_game():
     food.refresh()
     play_again_button.hide()
     start_button.hide()
+    easy_button.hide()
+    normal_button.hide()
+    hard_button.hide()
     exit_button.hide()
     start_screen.hide()
 
@@ -557,13 +686,19 @@ def restart_game():
 
     snake.reset()
     prepare_game()
-    current_speed_ms = START_SPEED_MS
+    current_speed_ms = DIFFICULTY_SPEEDS[selected_difficulty]
     is_paused = False
     start_countdown()
 
 
 def handle_click(x, y):
     global game_started
+
+    for difficulty_name, button in difficulty_buttons().items():
+        if start_screen.is_visible and button.was_clicked(x, y):
+            set_difficulty(difficulty_name)
+            screen.update()
+            return
 
     if exit_button.was_clicked(x, y):
         quit_game()
@@ -674,6 +809,10 @@ snake.hide()
 food.hide_food()
 start_screen.show()
 start_button.show()
+easy_button.show()
+normal_button.show()
+hard_button.show()
+set_difficulty(selected_difficulty)
 exit_button.show()
 screen.onclick(handle_click)
 screen.getcanvas().bind("<Motion>", handle_mouse_move)
