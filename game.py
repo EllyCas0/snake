@@ -69,6 +69,7 @@ class Game:
         self.game_started = False
         self.is_paused = False
         self.current_speed_ms = DIFFICULTY_SPEEDS[self.selected_difficulty]
+        self.run_session_id = 0
 
         self.screen = turtle.Screen()
         self.screen.setup(width=SCREEN_WIDTH, height=SCREEN_HEIGHT)
@@ -101,7 +102,7 @@ class Game:
         self.start_button = Button(
             "Start",
             0,
-            -100,
+            -70,
             text_color=TEXT_COLOR,
             border_color=BUTTON_BORDER_COLOR,
             fill_color=START_BUTTON_COLOR,
@@ -130,7 +131,7 @@ class Game:
         self.easy_button = Button(
             "Easy",
             -120,
-            -45,
+            45,
             text_color=TEXT_COLOR,
             border_color=BUTTON_BORDER_COLOR,
             width=100,
@@ -142,7 +143,7 @@ class Game:
         self.normal_button = Button(
             "Normal",
             0,
-            -45,
+            45,
             text_color=TEXT_COLOR,
             border_color=BUTTON_BORDER_COLOR,
             width=100,
@@ -154,7 +155,7 @@ class Game:
         self.hard_button = Button(
             "Hard",
             120,
-            -45,
+            45,
             text_color=TEXT_COLOR,
             border_color=BUTTON_BORDER_COLOR,
             width=100,
@@ -166,29 +167,29 @@ class Game:
         self.exit_button = Button(
             "Exit",
             0,
-            -285,
+            -210,
             text_color=TEXT_COLOR,
             border_color=BUTTON_BORDER_COLOR,
-            width=140,
-            height=44,
+            width=180,
+            height=50,
             fill_color=EXIT_BUTTON_COLOR,
             hover_color=EXIT_BUTTON_HOVER_COLOR,
         )
         self.settings_button = Button(
             "Settings",
             0,
-            -175,
+            -140,
             text_color=TEXT_COLOR,
             border_color=BUTTON_BORDER_COLOR,
-            width=170,
-            height=44,
+            width=180,
+            height=50,
             fill_color=SETTINGS_BUTTON_COLOR,
             hover_color=SETTINGS_BUTTON_HOVER_COLOR,
         )
         self.settings_back_button = Button(
             "Back",
             0,
-            -225,
+            -235,
             text_color=TEXT_COLOR,
             border_color=BUTTON_BORDER_COLOR,
             width=150,
@@ -200,7 +201,7 @@ class Game:
             "Moss": Button(
                 "Moss",
                 -140,
-                -20,
+                -55,
                 text_color=TEXT_COLOR,
                 border_color=BUTTON_BORDER_COLOR,
                 width=110,
@@ -212,7 +213,7 @@ class Game:
             "Gold": Button(
                 "Gold",
                 0,
-                -20,
+                -55,
                 text_color=TEXT_COLOR,
                 border_color=BUTTON_BORDER_COLOR,
                 width=110,
@@ -224,7 +225,7 @@ class Game:
             "Ocean": Button(
                 "Ocean",
                 140,
-                -20,
+                -55,
                 text_color=TEXT_COLOR,
                 border_color=BUTTON_BORDER_COLOR,
                 width=110,
@@ -238,7 +239,7 @@ class Game:
             "On": Button(
                 "On",
                 -70,
-                -160,
+                -155,
                 text_color=TEXT_COLOR,
                 border_color=BUTTON_BORDER_COLOR,
                 width=90,
@@ -250,7 +251,7 @@ class Game:
             "Off": Button(
                 "Off",
                 70,
-                -160,
+                -155,
                 text_color=TEXT_COLOR,
                 border_color=BUTTON_BORDER_COLOR,
                 width=90,
@@ -337,6 +338,12 @@ class Game:
         for key, handler in keymap.items():
             self.screen.onkeypress(handler, key)
 
+    def invalidate_timers(self):
+        self.run_session_id += 1
+
+    def current_run_session(self):
+        return self.run_session_id
+
     def handle_spacebar(self):
         if self.settings_screen.is_visible or self.game_is_on:
             return
@@ -376,6 +383,7 @@ class Game:
         self.start_screen.hide()
 
     def restart_game(self):
+        self.invalidate_timers()
         self.snake.reset()
         self.prepare_game()
         self.current_speed_ms = DIFFICULTY_SPEEDS[self.selected_difficulty]
@@ -384,6 +392,12 @@ class Game:
 
     def handle_click(self, x, y):
         if self.settings_screen.is_visible:
+            for difficulty_name, button in self.difficulty_buttons().items():
+                if button.was_clicked(x, y):
+                    self.set_difficulty(difficulty_name)
+                    self.screen.update()
+                    return
+
             for color_name, button in self.snake_color_buttons.items():
                 if button.was_clicked(x, y):
                     self.set_snake_color(color_name)
@@ -404,17 +418,7 @@ class Game:
                 self.show_main_menu()
                 return
 
-            if self.exit_button.was_clicked(x, y):
-                self.quit_game()
-                return
-
             return
-
-        for difficulty_name, button in self.difficulty_buttons().items():
-            if self.start_screen.is_visible and button.was_clicked(x, y):
-                self.set_difficulty(difficulty_name)
-                self.screen.update()
-                return
 
         if self.start_screen.is_visible and self.settings_button.was_clicked(x, y):
             self.show_settings_menu()
@@ -446,6 +450,7 @@ class Game:
         self.screen.update()
 
     def quit_game(self):
+        self.invalidate_timers()
         self.screen.bye()
 
     def toggle_pause(self):
@@ -458,13 +463,16 @@ class Game:
             self.scoreboard.show_pause()
         else:
             self.scoreboard.clear_pause()
-            self.run_game()
+            self.run_game(self.current_run_session())
 
         self.screen.update()
 
     def end_game(self):
+        self.invalidate_timers()
         self.game_is_on = False
         self.is_paused = False
+        self.snake.hide()
+        self.food.hide_food()
         self.scoreboard.clear_pause()
         self.scoreboard.clear_countdown()
         self.scoreboard.game_over()
@@ -473,26 +481,33 @@ class Game:
         self.exit_button.show()
         self.screen.update()
 
-    def countdown_step(self, index):
+    def countdown_step(self, index, run_session_id):
+        if run_session_id != self.run_session_id:
+            return
+
         countdown_messages = ["3", "2", "1", "Go!"]
 
         if index >= len(countdown_messages):
             self.scoreboard.clear_countdown()
             self.game_is_on = True
-            self.run_game()
+            self.run_game(run_session_id)
             return
 
         self.scoreboard.show_countdown(countdown_messages[index])
         self.screen.update()
-        self.screen.ontimer(lambda: self.countdown_step(index + 1), 500)
+        self.screen.ontimer(
+            lambda: self.countdown_step(index + 1, run_session_id),
+            500,
+        )
 
     def start_countdown(self):
         self.game_is_on = False
         self.scoreboard.clear_message()
         self.scoreboard.clear_pause()
-        self.countdown_step(0)
+        self.countdown_step(0, self.current_run_session())
 
     def show_main_menu(self):
+        self.invalidate_timers()
         self.game_is_on = False
         self.is_paused = False
         self.game_started = False
@@ -507,15 +522,15 @@ class Game:
         self.play_again_button.hide()
         self.main_menu_button.hide()
         self.settings_back_button.hide()
+        self.easy_button.hide()
+        self.normal_button.hide()
+        self.hard_button.hide()
         for button in self.snake_color_buttons.values():
             button.hide()
         for button in self.border_toggle_buttons.values():
             button.hide()
         self.start_screen.show()
         self.start_button.show()
-        self.easy_button.show()
-        self.normal_button.show()
-        self.hard_button.show()
         self.settings_button.show()
         self.set_difficulty(self.selected_difficulty)
         self.set_snake_color(self.selected_snake_color_name)
@@ -524,6 +539,7 @@ class Game:
         self.screen.update()
 
     def show_settings_menu(self):
+        self.invalidate_timers()
         self.game_is_on = False
         self.is_paused = False
         self.border.hide_border()
@@ -542,17 +558,24 @@ class Game:
         self.hard_button.hide()
         self.settings_button.hide()
         self.settings_screen.show()
+        self.easy_button.show()
+        self.normal_button.show()
+        self.hard_button.show()
         for button in self.snake_color_buttons.values():
             button.show()
         for button in self.border_toggle_buttons.values():
             button.show()
+        self.set_difficulty(self.selected_difficulty)
         self.set_snake_color(self.selected_snake_color_name)
         self.set_border_enabled(self.border_enabled)
         self.settings_back_button.show()
-        self.exit_button.show()
+        self.exit_button.hide()
         self.screen.update()
 
-    def run_game(self):
+    def run_game(self, run_session_id):
+        if run_session_id != self.run_session_id:
+            return
+
         if not self.game_is_on or self.is_paused:
             return
 
@@ -578,7 +601,10 @@ class Game:
             return
 
         self.screen.update()
-        self.screen.ontimer(self.run_game, self.current_speed_ms)
+        self.screen.ontimer(
+            lambda: self.run_game(run_session_id),
+            self.current_speed_ms,
+        )
 
     def start(self):
         self.bind_controls()
@@ -588,9 +614,6 @@ class Game:
         self.scoreboard.hide_score()
         self.start_screen.show()
         self.start_button.show()
-        self.easy_button.show()
-        self.normal_button.show()
-        self.hard_button.show()
         self.settings_button.show()
         self.set_difficulty(self.selected_difficulty)
         self.set_snake_color(self.selected_snake_color_name)
