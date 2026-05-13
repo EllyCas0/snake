@@ -158,17 +158,19 @@ class Border(turtle.Turtle):
     def show_border(self):
         self.clear()
         self.is_visible = True
+        inset = self.pensize() / 2
+        left = self.playfield_bounds["left"] + inset
+        right = self.playfield_bounds["right"] - inset
+        top = self.playfield_bounds["top"] - inset
+        bottom = self.playfield_bounds["bottom"] + inset
         self.penup()
-        self.goto(self.playfield_bounds["left"], self.playfield_bounds["top"])
+        self.goto(left, top)
+        self.setheading(0)
         self.pendown()
         for _ in range(2):
-            self.forward(
-                self.playfield_bounds["right"] - self.playfield_bounds["left"]
-            )
+            self.forward(right - left)
             self.right(90)
-            self.forward(
-                self.playfield_bounds["top"] - self.playfield_bounds["bottom"]
-            )
+            self.forward(top - bottom)
             self.right(90)
         self.penup()
 

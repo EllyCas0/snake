@@ -10,7 +10,10 @@ class Snake:
         self.playfield_bounds = playfield_bounds
         self.segments = []
         self.direction = "Right"
+        self.head_shape_name = None
         self.create_snake()
+        self.update_head_shape()
+        self.update_head_orientation()
 
     def create_snake(self):
         for position in self.starting_positions:
@@ -23,10 +26,40 @@ class Snake:
         segment.goto(position)
         self.segments.append(segment)
 
+    def build_head_shape(self):
+        shape = turtle.Shape("compound")
+        body = ((-10, -10), (10, -10), (10, 10), (-10, 10))
+        top_eye = ((2, 2), (8, 2), (8, 8), (2, 8))
+        bottom_eye = ((2, -8), (8, -8), (8, -2), (2, -2))
+        top_pupil = ((5, 4), (8, 4), (8, 7), (5, 7))
+        bottom_pupil = ((5, -7), (8, -7), (8, -4), (5, -4))
+        shape.addcomponent(body, self.color)
+        shape.addcomponent(top_eye, "#F4EFE2")
+        shape.addcomponent(bottom_eye, "#F4EFE2")
+        shape.addcomponent(top_pupil, "#111315")
+        shape.addcomponent(bottom_pupil, "#111315")
+        return shape
+
+    def update_head_shape(self):
+        screen = self.segments[0].getscreen()
+        self.head_shape_name = f"snake_head_{self.color.replace('#', '')}"
+        screen.register_shape(self.head_shape_name, self.build_head_shape())
+        self.segments[0].shape(self.head_shape_name)
+        for segment in self.segments[1:]:
+            segment.color(self.color)
+
+    def update_head_orientation(self):
+        headings = {
+            "Up": 90,
+            "Down": 270,
+            "Left": 180,
+            "Right": 0,
+        }
+        self.segments[0].setheading(headings[self.direction])
+
     def set_color(self, color):
         self.color = color
-        for segment in self.segments:
-            segment.color(color)
+        self.update_head_shape()
 
     def extend(self):
         self.add_segment(self.segments[-1].position())
@@ -46,22 +79,27 @@ class Snake:
             head.setx(head.xcor() - self.move_distance)
         elif self.direction == "Right":
             head.setx(head.xcor() + self.move_distance)
+        self.update_head_orientation()
 
     def up(self):
         if self.direction != "Down":
             self.direction = "Up"
+            self.update_head_orientation()
 
     def down(self):
         if self.direction != "Up":
             self.direction = "Down"
+            self.update_head_orientation()
 
     def left(self):
         if self.direction != "Right":
             self.direction = "Left"
+            self.update_head_orientation()
 
     def right(self):
         if self.direction != "Left":
             self.direction = "Right"
+            self.update_head_orientation()
 
     def hit_wall(self):
         head = self.segments[0]
@@ -106,6 +144,8 @@ class Snake:
         self.segments.clear()
         self.direction = "Right"
         self.create_snake()
+        self.update_head_shape()
+        self.update_head_orientation()
 
     def hide(self):
         for segment in self.segments:
@@ -114,6 +154,7 @@ class Snake:
     def show(self):
         for segment in self.segments:
             segment.showturtle()
+        self.update_head_orientation()
 
 
 class Food(turtle.Turtle):

@@ -13,10 +13,8 @@ SPEED_STEP_MS = 2
 STARTING_POSITIONS = [(0, 0), (-20, 0), (-40, 0)]
 START_ANIMATION_MS = 260
 HUD_HEIGHT = 80
-PLAYFIELD_TOP = (SCREEN_HEIGHT // 2) - HUD_HEIGHT
-PLAYFIELD_BOTTOM = -(SCREEN_HEIGHT // 2) + 10
-PLAYFIELD_LEFT = -(SCREEN_WIDTH // 2) + 10
-PLAYFIELD_RIGHT = (SCREEN_WIDTH // 2) - 10
+PLAYFIELD_MARGIN = 10
+PLAYFIELD_BOTTOM_MARGIN = 10
 BACKGROUND_COLOR = "#111315"
 SNAKE_COLOR = "#8FA06E"
 BORDER_COLOR = "#D7D0C3"
@@ -46,18 +44,13 @@ SNAKE_COLOR_OPTIONS = {
     "Ocean": "#6F93A6",
 }
 HIGH_SCORE_FILE = Path(__file__).with_name("high_score.txt")
+ICON_FILE = Path(__file__).with_name("snake_icon.png")
 DIFFICULTY_SPEEDS = {
     "Easy": 90,
     "Normal": 70,
     "Hard": 50,
 }
 DEFAULT_DIFFICULTY = "Easy"
-PLAYFIELD_BOUNDS = {
-    "top": PLAYFIELD_TOP,
-    "bottom": PLAYFIELD_BOTTOM,
-    "left": PLAYFIELD_LEFT,
-    "right": PLAYFIELD_RIGHT,
-}
 
 
 class Game:
@@ -76,28 +69,32 @@ class Game:
         self.screen.bgcolor(BACKGROUND_COLOR)
         self.screen.title("Snake Game")
         self.screen.tracer(0)
+        self.window_icon = None
+        self.set_window_icon()
+        self.screen.update()
+        self.playfield_bounds = self.create_playfield_bounds()
 
         self.snake = Snake(
             color=SNAKE_COLOR_OPTIONS[self.selected_snake_color_name],
             move_distance=MOVE_DISTANCE,
             starting_positions=STARTING_POSITIONS,
-            playfield_bounds=PLAYFIELD_BOUNDS,
+            playfield_bounds=self.playfield_bounds,
         )
         self.food = Food(
-            playfield_bounds=PLAYFIELD_BOUNDS,
+            playfield_bounds=self.playfield_bounds,
             move_distance=MOVE_DISTANCE,
             food_colors=FOOD_COLORS,
         )
         self.scoreboard = Scoreboard(
             text_color=TEXT_COLOR,
-            playfield_top=PLAYFIELD_TOP,
+            playfield_top=self.playfield_bounds["top"],
             high_score_file=HIGH_SCORE_FILE,
             difficulty_speeds=DIFFICULTY_SPEEDS,
             selected_difficulty_getter=lambda: self.selected_difficulty,
         )
         self.border = Border(
             border_color=BORDER_COLOR,
-            playfield_bounds=PLAYFIELD_BOUNDS,
+            playfield_bounds=self.playfield_bounds,
         )
         self.start_button = Button(
             "Start",
@@ -277,6 +274,34 @@ class Game:
             text_color=TEXT_COLOR,
         )
 
+    def set_window_icon(self):
+        if not ICON_FILE.exists():
+            return
+
+        root = getattr(self.screen, "_root", None)
+        if root is None:
+            return
+
+        try:
+            self.window_icon = turtle.Tkinter.PhotoImage(file=str(ICON_FILE))
+            root.iconphoto(True, self.window_icon)
+        except Exception:
+            self.window_icon = None
+
+    def create_playfield_bounds(self):
+        canvas = self.screen.getcanvas()
+        canvas.update_idletasks()
+        canvas_width = canvas.winfo_width() or SCREEN_WIDTH
+        canvas_height = canvas.winfo_height() or SCREEN_HEIGHT
+        half_width = canvas_width / 2
+        half_height = canvas_height / 2
+        return {
+            "top": half_height - HUD_HEIGHT,
+            "bottom": -half_height + PLAYFIELD_BOTTOM_MARGIN,
+            "left": -half_width + PLAYFIELD_MARGIN,
+            "right": half_width - PLAYFIELD_MARGIN,
+        }
+
     def all_buttons(self):
         return [
             self.start_button,
@@ -441,8 +466,11 @@ class Game:
             self.show_main_menu()
 
     def handle_mouse_move(self, event):
-        x = event.x - (self.screen.window_width() / 2)
-        y = (self.screen.window_height() / 2) - event.y
+        canvas = self.screen.getcanvas()
+        canvas_width = canvas.winfo_width() or self.screen.window_width()
+        canvas_height = canvas.winfo_height() or self.screen.window_height()
+        x = event.x - (canvas_width / 2)
+        y = (canvas_height / 2) - event.y
 
         for button in self.all_buttons():
             button.set_hovered(button.was_clicked(x, y))
